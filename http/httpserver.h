@@ -3,8 +3,8 @@
 #include "httpResponse.h"
 #include <conditional_variable>
 #include <mutex>
-#include <lock_guard>
 #include <queue>
+#include <unordered_map>
 struct  httpServerReturnType
 {
     
@@ -29,7 +29,7 @@ class httpServer
         virtual httpServerReturnType head();
         virtual httpServerReturnType post();
         virtual httpServerReturnType not_implemented();
-//===========================================================
+//===========================================================q
 
         int handleRequest();
 
@@ -38,19 +38,25 @@ class httpServer
         std::string _url;
         int _port;
 
+        sockaddr_in _servAddr;
+
         int _sockfd;
         httpRequest _httpRequest;
         HTTPResponse _httpResponse;
+        
+        std::unoredered_map<int ,int > _port_to_sockfd;
 
-        std::conditional_variable  _have_events;
+        //std::mutex _server_mutex;
 
-        std::queue<int>  _MessageQueue;//fd queue
+        //std::conditional_variable  _have_events;
 
-        const _maxQueueSize;
+        //std::queue<int>  _MessageQueue;//fd queue
 
-        std::mutex _server_mutex;
+        //const _maxQueueSize;
+
 
 //===============================================================
+        int initSocket();
         
 
 }

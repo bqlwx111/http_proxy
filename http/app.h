@@ -12,24 +12,22 @@ class app
         app();
         ~app();
 
+        void run();
         int addServer(std::string& api,httpServerPtr server);
         int rmServer(std::string& api);
 
     private:
 
         std::unordered_map<std::string,httpServerPtr> servers;
-        std::unordered_map<std::string,std::string>  configure;
+        //std::unordered_map<std::string,std::string>  configure;
 
 
         int _epoll_size;
         int _epoll_fd;
-        
+        int fd;
         std::condition_variable _have_event;
 
         int epollRegist();
         int epollUnRegist();
-
-
-
 
 }

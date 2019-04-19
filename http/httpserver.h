@@ -14,14 +14,15 @@ class httpServer
 {
     public:
         httpServer();
-        ~httpServer();
+        virtual ~httpServer();
 //==============================================
         int run ();
 
         void setUrl(std::string& );
         void setPort(int);
         void setIp(std::string& );
-        void setConVar(bool);
+
+        void addsocket();
 
         //GET, PUT, HEAD, POST, NOT_IMPLEMENTED
         virtual httpServerReturnType get();
@@ -37,6 +38,7 @@ class httpServer
         std::string _ip;
         std::string _url;
         int _port;
+        int _epoll_fd;
 
         sockaddr_in _servAddr;
 
@@ -46,11 +48,11 @@ class httpServer
         
         std::unoredered_map<int ,int > _port_to_sockfd;
 
+        epoll_event  _MessageQueue[1024];//fd queue
         //std::mutex _server_mutex;
 
         //std::conditional_variable  _have_events;
 
-        //std::queue<int>  _MessageQueue;//fd queue
 
         //const _maxQueueSize;
 

@@ -1,5 +1,6 @@
 #include <sys/socket>
 #include "httpserver.h"
+#include "httpRequest.h"
 #include <iostream>
 #include <thread>
 httpServer::httpServer()
@@ -44,17 +45,89 @@ int httpserver::initSocket()
     std::cout<<"httpserver listen on port "<<svrPort<<" successful"<<std::endl;
 
     _port_to_sockfd[_port]=_sockfd;
-    return 1;
+    return _sockfd;
 }
 
 int httpserver::addsocket()
 {
-    if(initSocket()==1)
+    if(initSocket()!=-1)
     {
         epoll_event e.events=EPOLLIN|EPOLLOUT;
+        e.data.fd=_sockfd;
         epoll_ct(_epoll_fd,EPOLL_CTL_ADD,_sockfd,e);
     }
     else return -1;
+}
+
+int ComingSokcet(int& listenFd)
+{
+    struct sockaddr_in clientAddr;
+    socklen_t clilen;
+    int sock_fd=accept(listenFd,(sockaddr* )&clientAdd,clilen);
+
+    epoll_event e;
+    e.events=EPOLLIN|EPOLLOUT|EPOLLHUP;
+    e.data.fd=sock_fd;
+    epoll_ct(_epoll_fd,EPOLL_CTL_ADD,sock_fd,e);
+
+}
+
+//====================================
+typedef std::shared_ptr<httpRequest> Request;
+typedef std::shared_ptr<httpResponse> Response;
+
+int ReadSocket(epoll_event & readableEvent)
+{
+    Request request(new httpRequest);
+    std::string request_string(recv());
+    handleRequest(request_string);
+
+    epoll_event e;
+    e.events=EPOLLOUT;
+
+
+    e.ptr=&request;//todo
+
+
+    epoll_ct(_epoll_fd,EPOLL_CTL_MOD,readableEvent.data.fd,e);
+}
+
+int WriteSocket(epoll_event& writeableEvent)
+{
+    parseRequest();
+    Response response (new httpResponse);
+    std::string type;
+    if(type=="get")
+    {
+        get();
+        return;
+    }
+    if(type=="post")
+    {
+        post();
+        return;
+    }
+    if(type=="head")
+    {
+        head();
+        return;
+    }
+    if(type=="put")
+    {
+        head();
+        return;
+    }
+    if(type=="not implemented")
+    {
+        not_implemented();
+        return;
+    }
+}
+//========================================================
+int CloseSokcet(epoll_event& closeAbleEvent)
+{
+    closeAbleEvent.data.ptr=NULL;
+    Close(closeAbleEvent.data.fd);
 }
 
 int httpserver::run()
@@ -64,8 +137,34 @@ int httpserver::run()
         int events_num=epoll_wait(_epoll_fd,_MessageQueue,1024,-1);
         for(int i=0;i<events_num;i++)
         {
-            thread t(handleRequest);
-            t.detach();
+            if(_port_to_sockfd.find(_MessageQueue[i].data.fd)!=_port_to_sockfd.end())
+            { 
+                thread t(ComingSokcet,_MessageQueue[i].data.fd);
+                t.detach();
+                continue;
+            }
+
+            if(_MessageQueue[i].events&EPOLLIN)
+            {
+                thread t(ReadSocket,_MessageQueue[i]);
+                t.detach();
+                continue;
+            }
+
+            if(_MessageQueue[i].events&EPOLLOUT)
+            {
+                thread t(WriteSocket);
+                t.detach();
+                continue;
+            }
+
+            if(_MessageQueue[i].events&EPOLLHUP)
+            {
+                thread t(CloseSokcet);
+                t.detach();
+                continue;
+            }
+            
         }
 
     }

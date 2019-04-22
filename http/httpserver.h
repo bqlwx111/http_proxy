@@ -48,14 +48,13 @@ class httpServer
         int _sockfd;
         std::unoredered_map<int ,int > _port_to_sockfd;
         epoll_event  _MessageQueue[1024];//fd queue
+        
         //httpRequest _httpRequest;
         //HTTPResponse _httpResponse;
         
-
         //std::mutex _server_mutex;
 
         //std::conditional_variable  _have_events;
-
 
         //const _maxQueueSize;
 

@@ -6,7 +6,7 @@
 #include"HTTP.h"
 
 
-class HTTPResponse{
+class HttpResponse{
 	public:
 		HTTPResponse();
 		~HTTPResponse();
@@ -27,14 +27,7 @@ class HTTPResponse{
 		string getReasonPhrase(void );
 		string getResponseBodyPtr(void );
 		//string getHTTPHeader(string headerName);
-		//vector<pair<string, string> >* getHTTPHeaderVector(void );
-
-
-		
-
-
-
-	
+		//vector<pair<string, string> >* getHTTPHeaderVector(void );	
 		size_t getResponseSize(void );
 		string* getResponseDataPtr(void );
 

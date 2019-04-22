@@ -25,7 +25,7 @@ class httpRequest
         int setRequestBody(std::string& body)    {_requestBody=body; return 1};
         int setData(std::string& data)  {_data=data; return 1};
 
-    
+        void addData(const char* ,const int & len);
     private:
         Version _Version;
         Method _Method;

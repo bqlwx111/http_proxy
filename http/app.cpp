@@ -5,10 +5,6 @@
 #include<sys/socket.h>
 app::app()
 {
-    _epoll_size=1024;
-    _epoll_fd=0;
-    _have_event=false;
-
     _epoll_fd=epoll_create(_epoll_size);
 
 }
@@ -16,6 +12,21 @@ void app::run()
 {
     for(auto& i:servers)
         i->run();
+
+    app.setPort(7000);
+    app.setIp("0.0.0.0");
+    app.addsocket();
+
+    while(true)
+    {
+        int events_num=epoll_wait(getEpollfd(),getMessageQueue(),1024,-1);
+        for(int i=0;i<events_num;i++)
+        {
+            thread t(handleRequest);
+            t.detach();
+        }
+
+    }
     
 }
 //=========================================================
@@ -32,13 +43,4 @@ int app::rmServer(std::string& api)
         servers.erase(i);
     return 1;
 }
-//===========================
-int app::epollRegist(int fd)
-{
-
-    epoll_ct(_epoll_fd,EPOLL_CTL_ADD,fd,);
-}
-int aPP::epollUnRegist(int fd)
-{
-
-}
+//=========================== 

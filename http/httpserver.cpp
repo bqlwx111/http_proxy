@@ -8,11 +8,15 @@ httpServer::httpServer()
 }
 httpServer::~httpServer()
 {
+    for(auto& i:_port_to_sockfd)
+        std::close(i);
+
     std::close(_epoll_fd);
 }
+
 int httpserver::initSocket()
 {
-    _sockfd=socket(AF_INET,SOCK_STREAM,0);
+    _sockfd=socket(AF_INET,SOCK_STREAM,SOCK_STREAM|SOCK_NONBLOCK,IPPROTO_TCP);
     if(_sockfd<0)
     {
         std::cout<<"Failed to create socket"<<std::endl;

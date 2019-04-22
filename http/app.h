@@ -6,28 +6,25 @@
 
 typedef std::shared_ptr<httpServer> httpServerPtr;
 
-class app
+class app public:httpServer
 {
     public:
         app();
         ~app();
 
-        void run();
+        virtual void run();
         int addServer(std::string& api,httpServerPtr server);
         int rmServer(std::string& api);
+
+        //GET, PUT, HEAD, POST, NOT_IMPLEMENTED
+        virtual httpServerReturnType get();
+        virtual httpServerReturnType put();
+        virtual httpServerReturnType head();
+        virtual httpServerReturnType post();
+        virtual httpServerReturnType not_implemented();
 
     private:
 
         std::unordered_map<std::string,httpServerPtr> servers;
-        //std::unordered_map<std::string,std::string>  configure;
-
-
-        int _epoll_size;
-        int _epoll_fd;
-        int fd;
-        std::condition_variable _have_event;
-
-        int epollRegist();
-        int epollUnRegist();
-
+        //std::unordered_map<std::string,std::string>  configure
 }

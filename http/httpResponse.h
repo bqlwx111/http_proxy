@@ -3,13 +3,13 @@
 #include<vector>
 #include<fstream>
 
-#include"HTTP.h"
 
 
-class HttpResponse{
+
+class httpResponse{
 	public:
-		HTTPResponse();
-		~HTTPResponse();
+		httpResponse();
+		~httpResponse();
 
 		void showResponse(void );
 		void addData(const char *, const int&);
@@ -24,12 +24,12 @@ class HttpResponse{
 
 		Version getProtocol(void );
 		int getStatusCode(void );
-		string getReasonPhrase(void );
-		string getResponseBodyPtr(void );
+		std::string getReasonPhrase(void );
+		std::string getResponseBodyPtr(void );
 		//string getHTTPHeader(string headerName);
 		//vector<pair<string, string> >* getHTTPHeaderVector(void );	
 		size_t getResponseSize(void );
-		string* getResponseDataPtr(void );
+		std::string getResponseDataPtr(void );
 
 
 	private:
@@ -44,6 +44,6 @@ class HttpResponse{
 		int parseResponse(void );
 		int prepareResponse(void );
         
-		int copyFromFile(ifstream&, int);
-		int copyToFile(ofstream& );
+		int copyFromFile(std::ifstream&, int);
+		int copyToFile(std::ofstream& );
 };

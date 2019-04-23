@@ -27,4 +27,4 @@ class app public:httpServer
 
         std::unordered_map<std::string,httpServerPtr> servers;
         //std::unordered_map<std::string,std::string>  configure
-}
+};

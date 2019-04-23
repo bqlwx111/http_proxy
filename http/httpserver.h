@@ -1,8 +1,11 @@
 #include <string>
 #include "httpRequest.h"
 #include "httpResponse.h"
-#include <conditional_variable>
-#include <mutex>
+
+
+#include<sys/epoll.h>
+#include<sys/socket.h>
+
 #include <queue>
 #include <unordered_map>
 struct  httpServerReturnType
@@ -18,14 +21,14 @@ class httpServer
 //==============================================
         virtual int run ();
 
-        void setUrl(std::string& url){_url=url;};
-        void setPort(int port){_port=port;};
-        void setIp(std::string& ip){_ip=ip;};
+        void setUrl(std::string& url){_url=url;}
+        void setPort(int port){_port=port;}
+        void setIp(std::string& ip){_ip=ip;}
 
         int getEpollfd(){return _epoll_fd;}
-        epoll_event* getMessageQueue(){return _MessageQueue};
+        epoll_event* getMessageQueue(){return _MessageQueue;}
 
-        void addsocket();
+        int addsocket();
 
         //GET, PUT, HEAD, POST, NOT_IMPLEMENTED
         virtual httpServerReturnType get();
@@ -33,9 +36,15 @@ class httpServer
         virtual httpServerReturnType head();
         virtual httpServerReturnType post();
         virtual httpServerReturnType not_implemented();
-//===========================================================q
+//===========================================================
 
-        int handleRequest();
+        int initSocket();
+        int ReadSocket(epoll_event &);
+        int WriteSocket(epoll_event&);
+        int ComingSokcet(int& );
+        int CloseSokcet(epoll_event&);
+
+        int handleRequest(std::string );
 
     private:
         std::string _ip;
@@ -44,9 +53,10 @@ class httpServer
         int _epoll_fd;
 
         sockaddr_in _servAddr;
+        //sockaddr _servAddr;
 
         int _sockfd;
-        std::unoredered_map<int ,int > _port_to_sockfd;
+        std::unordered_map<int ,int> _port_to_sockfd;
         epoll_event  _MessageQueue[1024];//fd queue
         
         //httpRequest _httpRequest;
@@ -59,8 +69,5 @@ class httpServer
         //const _maxQueueSize;
 
 
-//===============================================================
-        int initSocket();
-        
-
-}
+//===============================================================;     int initSocket();
+};

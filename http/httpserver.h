@@ -9,6 +9,7 @@
 #include <queue>
 #include <unordered_map>
 #include <netinet/in.h>
+#include <set>
 struct  httpServerReturnType
 {
     
@@ -22,14 +23,13 @@ class httpServer
 //==============================================
         virtual int run ();
 
-        void setUrl(std::string& url){_url=url;}
+        void setUrl(std::string url){_url=url;}
         void setPort(int port){_port=port;}
-        void setIp(std::string& ip){_ip=ip;}
+        void setIp(std::string ip){_ip=ip;}
 
         int getEpollfd(){return _epoll_fd;}
         epoll_event* getMessageQueue(){return _MessageQueue;}
 
-        int addsocket();
 
         //GET, PUT, HEAD, POST, NOT_IMPLEMENTED
         virtual httpServerReturnType get();
@@ -39,10 +39,11 @@ class httpServer
         virtual httpServerReturnType not_implemented();
 //===========================================================
 
+        int addsocket();
         int initSocket();
         int ReadSocket(epoll_event &);
         int WriteSocket(epoll_event&);
-        int ComingSokcet(epoll_event& );
+        int ComingSocket(epoll_event& );
         int CloseSokcet(epoll_event&);
 
         int handleRequest(std::string );
@@ -58,6 +59,7 @@ class httpServer
 
         int _sockfd;
         std::unordered_map<int ,int> _port_to_sockfd;
+        std::set<int> _listen_fds;
         epoll_event  _MessageQueue[1024];//fd queue
         
         //httpRequest _httpRequest;

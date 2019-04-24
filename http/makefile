@@ -8,7 +8,7 @@ IncludePaht=
 c++11= -std=c++11
 
 run: $(object)
-	$(++) $(arch) -o run $(object) $(header) $(c++11) -pthread -fpermissive
+	$(++) $(arch) -o server $(object) $(header) $(c++11) -pthread -fpermissive
 run.o: run.cpp
 	$(++) $(arch) -c run.cpp $(c++11) -pthread -fpermissive
 httpserver.o: httpserver.h httpserver.cpp

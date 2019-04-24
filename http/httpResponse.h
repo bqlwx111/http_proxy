@@ -2,19 +2,20 @@
 #include<string>
 #include<vector>
 #include<fstream>
+#include "httpHeader.h"
 
 
 
 
 class httpResponse{
 	public:
-		httpResponse();
-		~httpResponse();
+		httpResponse(){}
+		~httpResponse(){}
 
 		void showResponse(void );
 		void addData(const char *, const int&);
 	
-		int setVersion(Version );
+		int setVersion(Version& );
 		int setStatusCode(int );
 		int setReasonPhrase(void );
 		int setResponseBody(std::string& );

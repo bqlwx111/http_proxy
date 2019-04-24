@@ -8,6 +8,7 @@
 
 #include <queue>
 #include <unordered_map>
+#include <netinet/in.h>
 struct  httpServerReturnType
 {
     
@@ -41,7 +42,7 @@ class httpServer
         int initSocket();
         int ReadSocket(epoll_event &);
         int WriteSocket(epoll_event&);
-        int ComingSokcet(int& );
+        int ComingSokcet(epoll_event& );
         int CloseSokcet(epoll_event&);
 
         int handleRequest(std::string );

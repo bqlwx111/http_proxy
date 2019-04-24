@@ -8,8 +8,8 @@
 class httpRequest
 {
     public:
-        httpRequest();
-        ~httpRequest();
+        httpRequest(){}
+        ~httpRequest(){}
 
         void addData(const char * ,const int &);
 

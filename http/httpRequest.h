@@ -1,8 +1,10 @@
 #include <string>
 #include "httpHeader.h"
+#include <unordered_map>
 
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
+
 
 
 class httpRequest
@@ -36,7 +38,7 @@ class httpRequest
         std::string _uri;
         std::string _userAgent;
         std::string _hostName;
-        
+        std::unordered_map<std::string,std::string> _header_key_to_header_value;
         std::string _requestBody;
         std::string _data;
 };

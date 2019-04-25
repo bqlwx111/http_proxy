@@ -28,11 +28,12 @@ class httpRequest
         int setHostName(std::string& hostName)   {_hostName=hostName; return 1;}
         int setRequestBody(std::string& body)    {_requestBody=body; return 1;}
         int setData(std::string& data)  {_data=data; return 1;}
-
+    protected:
+        int handleRequest(std::string& request_string);
     private:
         Version _Version;
         Method _Method;
-        std::string _url;
+        std::string _uri;
         std::string _userAgent;
         std::string _hostName;
         

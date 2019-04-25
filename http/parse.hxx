@@ -5,7 +5,7 @@
 
 namespace headerParse
 {
-    std::string FindField(const char * buf ,const char * start,const char * end ,int bufsize)//find http header field
+    std::string FindField(const char * buf ,const char * start,const char * end ,int bufsize)//find url field
     {
         if(bufsize<=0)
             bufsize=std::strlen(buf);

@@ -128,8 +128,6 @@ typedef std::shared_ptr<httpResponse> Response;
 
 int httpServer::ReadSocket(epoll_event & readableEvent)
 {
-    Request request(new httpRequest);
-
     //std::string request_string(recv());
     std::string request_string;
 
@@ -164,7 +162,8 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     std::cout<<"request:: \n"<<request_string<<std::endl;
     std::cout<<"ReadSocket::event called : eventfd:"<< readableEvent.data.fd<<std::endl;
 
-    handleRequest(request_string);
+    Request request(new httpRequest);
+    request->handleRequest(request_string);
 
     epoll_event e;
     e.events=EPOLLOUT;

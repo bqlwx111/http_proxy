@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <netinet/in.h>
 #include <set>
+#include <memory>
 struct  httpServerReturnType
 {
     
@@ -30,16 +31,20 @@ class httpServer
         int getEpollfd(){return _epoll_fd;}
         epoll_event* getMessageQueue(){return _MessageQueue;}
 
+typedef std::shared_ptr<httpRequest> Request;
+typedef std::shared_ptr<httpResponse> Response;
 
         //GET, PUT, HEAD, POST, NOT_IMPLEMENTED
-        virtual httpServerReturnType get();
-        virtual httpServerReturnType put();
-        virtual httpServerReturnType head();
-        virtual httpServerReturnType post();
-        virtual httpServerReturnType not_implemented();
+        virtual httpServerReturnType get(Request&);
+        virtual httpServerReturnType put(Request&);
+        virtual httpServerReturnType head(Request&);
+        virtual httpServerReturnType post(Request&);
+        virtual httpServerReturnType not_implemented(Request&);
 //===========================================================
 
         int addsocket();
+
+    protected:
         int initSocket();
         int ReadSocket(epoll_event &);
         int WriteSocket(epoll_event&);

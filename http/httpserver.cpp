@@ -28,24 +28,26 @@ int httpServer::handleRequest(std::string request)
 {
 
 }
+typedef std::shared_ptr<httpRequest> Request;
+typedef std::shared_ptr<httpResponse> Response;
 
-httpServerReturnType httpServer::get()
+httpServerReturnType httpServer::get(Request&)
 {
 
 }
-httpServerReturnType httpServer::put()
+httpServerReturnType httpServer::put(Request&)
 {
 
 }
-httpServerReturnType httpServer::head()
+httpServerReturnType httpServer::head(Request&)
 {
 
 }
-httpServerReturnType httpServer::post()
+httpServerReturnType httpServer::post(Request&)
 {
 
 }
-httpServerReturnType httpServer::not_implemented()
+httpServerReturnType httpServer::not_implemented(Request&)
 {
     
 }
@@ -107,7 +109,7 @@ int httpServer::ComingSocket(epoll_event& ComingEvent)
 
     int sock_fd=accept4(ComingEvent.data.fd,(sockaddr* )&clientAddr,&clilen,SOCK_NONBLOCK);
 
-    std::cout<<"ComingSocket::sock_fd :"<<sock_fd<<"epoll successful"<<std::endl;
+    //std::cout<<"ComingSocket::sock_fd :"<<sock_fd<<" epoll successful"<<std::endl;
 
     epoll_event e;
 
@@ -160,14 +162,16 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     std::cout<<"counter::"<<counter<<std::endl;
     std::cout<<"size::"<<request_string.size()<<std::endl;
     std::cout<<"request:: \n"<<request_string<<std::endl;
-    std::cout<<"ReadSocket::event called : eventfd:"<< readableEvent.data.fd<<std::endl;
+    //std::cout<<"ReadSocket::event called : eventfd:"<< readableEvent.data.fd<<std::endl;
 
-    Request request(new httpRequest);
-    request->handleRequest(request_string);
+    //Request request(new httpRequest);
 
     epoll_event e;
     e.events=EPOLLOUT;
-    e.data.ptr=&request;//todo
+
+    e.data.ptr=(httpRequest*)new httpRequest;
+    httpRequest* request=e.data.ptr;
+    request->parseRequest(request_string);
 
 
     epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,readableEvent.data.fd,&e);
@@ -179,36 +183,42 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
 {
     //headerParse::FindField("abc");//todo
     Response response (new httpResponse);
-    std::string type;
+    //std::cout<<"WriteSocket::event called : eventfd:"<< writeableEvent.data.fd<<std::endl;
 
-    std::cout<<"WriteSocket::event called : eventfd:"<< writeableEvent.data.fd<<std::endl;
+    Request request ((httpRequest*)writeableEvent.data.ptr);
 
-    if(type=="get")
+    //epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,readableEvent.data.fd,&e);
+    if(request->getMethod()==GET)
     {
-        get();
+        get(request);
         return 1;
     }
-    if(type=="post")
+    if(request->getMethod()==POST)
     {
-        post();
+        post(request);
+        std::cout<<"post()"<<std::endl;
         return 1;
     }
-    if(type=="head")
+    if(request->getMethod()==HEAD)
     {
-        head();
+        head(request);
         return 1;
     }
-    if(type=="put")
+    if(request->getMethod()==PUT)
     {
-        head();
+        head(request);
         return 1;
     }
-    if(type=="not implemented")
+    if(request->getMethod()==NOT_IMPLEMENTED)
     {
-        not_implemented();
+        not_implemented(request);
         return 1;
     }
 
+    // not modified the fd status 
+    // core dumped here
+    // shared_ptr cause
+    // double free 
     return 1;
 }
 //========================================================

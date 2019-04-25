@@ -13,11 +13,13 @@ class httpRequest
         httpRequest(){}
         ~httpRequest(){}
 
+        httpRequest(const httpRequest&& request){}
+
         void addData(const char * ,const int &);
 
         Method getMethod(){return _Method;}
         Version getVersion(){return _Version;}
-        std::string getUrl(){return _url;}
+        std::string getUri(){return _uri;}
         std::string getUserAgent(){return _userAgent;}
         std::string getHostName(){return _hostName;}
         std::string getRequestBody(){return _requestBody;}
@@ -25,13 +27,13 @@ class httpRequest
 
         int setVersion(Version& v)   {_Version=v; return 1;}
         int setMethod(Method& m) {_Method=m;return 1;}
-        int setUrl(std::string& url)    {_url=url;return 1;}
+        int setUrl(std::string& uri)    {_uri=uri;return 1;}
         int setUserAgent(std::string& userAgent) {_userAgent=userAgent;return 1;}
         int setHostName(std::string& hostName)   {_hostName=hostName; return 1;}
         int setRequestBody(std::string& body)    {_requestBody=body; return 1;}
         int setData(std::string& data)  {_data=data; return 1;}
-    protected:
-        int handleRequest(std::string& request_string);
+
+        int parseRequest(std::string& request_string);
     private:
         Version _Version;
         Method _Method;

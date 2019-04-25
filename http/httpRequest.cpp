@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iostream>
 
-int httpRequest::handleRequest(std::string& request_string)
+int httpRequest::parseRequest(std::string& request_string)
 {
     int beforeCursor=0;
     int afterCursor=0;
@@ -31,7 +31,7 @@ int httpRequest::handleRequest(std::string& request_string)
 // version
     beforeCursor=afterCursor+1;
     afterCursor=request_string.find_first_of(" ",beforeCursor);    
-    std::string httpMethod=request_string.substr(beforeCursor,afterCursor-beforeCursor);
+    std::string httpVersion=request_string.substr(beforeCursor,afterCursor-beforeCursor);
 
     if(httpMethod=="HTTP/1.0")
         _Version=HTTP1_0;
@@ -60,7 +60,7 @@ int httpRequest::handleRequest(std::string& request_string)
         std::string value;
 
         pos=requestHeader.find(":");
-        key=requestHeader.substr(0,pos-1);
+        key=requestHeader.substr(0,pos);
         value=requestHeader.substr(pos+1);
 
         _header_key_to_header_value[key]=value;
@@ -68,9 +68,10 @@ int httpRequest::handleRequest(std::string& request_string)
     }
     for(auto&i : _header_key_to_header_value)
     {
-        std::cout<<"key:"<<i.first()<<" value:"<<i.second()<<endl;
+        std::cout<<"key:"<<i.first<<" value:"<<i.second<<std::endl;
     }
 //body
     _requestBody=request_string.substr(beforeCursor);
+    std::cout<<"body"<<_requestBody<<std::endl;
     return 1;
 }

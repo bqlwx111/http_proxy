@@ -13,7 +13,7 @@ httpResponse::~httpResponse()
 void httpResponse::showResponse()
 {
     std::cout<<"---Response Begin---"<<std::endl<<_responseString
-    <<"---Response End---"<<std::endl;
+    <<"\n---Response End---"<<std::endl;
 }
 
 /*

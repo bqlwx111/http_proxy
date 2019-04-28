@@ -1,6 +1,7 @@
 #include <string>
 #include "httpHeader.h"
 #include <unordered_map>
+#include <iostream>
 
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
@@ -15,7 +16,12 @@ class httpRequest
 
         httpRequest(const httpRequest&& request){}
 
-        void addData(const char * ,const int &);
+        void showRequest()
+        {
+            std::cout<<"--request--::\n";
+            for(auto& i: _header_key_to_header_value)
+                std::cout<<"key:"<<i.first<<" "<<"value"<<i.second;
+        }
 
         Method getMethod(){return _Method;}
         Version getVersion(){return _Version;}

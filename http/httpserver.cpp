@@ -54,17 +54,6 @@ Vary →Accept-Encoding
 void httpServer::get(Request& request,Response& response)
 {
 
-    response->setStatusCode(200);
-    response->setVersion(HTTP1_0);
-
-    response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
-    response->addHttpHeader(std::string("Content-Type"),std::string("text/html; charset=utf-8"));
-    response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
-    response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
-
-    response->addHttpHeader(std::string("Content-Length"),std::string("500"));
-
-    response->setResponse();
 }
 
 void httpServer::put(Request& request,Response& response)
@@ -77,6 +66,17 @@ void httpServer::head(Request& request,Response& response)
 }
 void httpServer::post(Request& request,Response& response)
 {
+    response->setStatusCode(200);
+    response->setVersion(HTTP1_0);
+
+    response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
+    response->addHttpHeader(std::string("Content-Type"),std::string("text/html; charset=utf-8"));
+    response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
+    response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
+
+    response->addHttpHeader(std::string("Content-Length"),std::string("500"));
+
+    response->setResponse();
     //std::cout<<"response.size()"<<response->getResponse().size()<<std::endl;
     //response->showResponse();
 
@@ -227,7 +227,8 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     e.events=EPOLLOUT;
 
     /*
-    typedef union epoll_data {
+    typedef union epoll_data 
+    {
         void *ptr;
         int fd;
         __uint32_t u32;
@@ -274,6 +275,7 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
 
     if(request->getMethod()==POST)
     {
+        std::cout<<"post()"<<std::endl;
         post(request,response);
     }
 
@@ -297,8 +299,11 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     std::string response_string=response->getResponse();
     
 
+    std::cout<<"called: "<<fdRequest->fd<<std::endl;
     int size=response_string.size();
+    size=16;
     std::cout<<"size:"<<size<<std::endl;    
+    std::cout<<"called: "<<fdRequest->fd<<std::endl;
 
     char* buf =new char [size];
     //std::shared_ptr<char> s_p(buf);
@@ -334,7 +339,7 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     epoll_event e;
     e.events=EPOLLHUP;
     epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,fdRequest->fd,&e);
-    std::cout<<"called: "<<n<<std::endl;
+    
     // not modified the fd status 
     // core dumped here
     // shared_ptr cause

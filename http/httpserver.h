@@ -35,11 +35,11 @@ typedef std::shared_ptr<httpRequest> Request;
 typedef std::shared_ptr<httpResponse> Response;
 
         //GET, PUT, HEAD, POST, NOT_IMPLEMENTED
-        virtual httpServerReturnType get(Request&);
-        virtual httpServerReturnType put(Request&);
-        virtual httpServerReturnType head(Request&);
-        virtual httpServerReturnType post(Request&);
-        virtual httpServerReturnType not_implemented(Request&);
+        virtual Response& get(Request&);
+        virtual Response& put(Request&);
+        virtual Response& head(Request&);
+        virtual Response& post(Request&);
+        virtual Response& not_implemented(Request&);
 //===========================================================
 
         int addsocket();

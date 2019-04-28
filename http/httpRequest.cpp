@@ -66,6 +66,7 @@ int httpRequest::parseRequest(std::string& request_string)
         _header_key_to_header_value[key]=value;
 
     }
+    /*
     for(auto&i : _header_key_to_header_value)
     {
         std::cout<<"key:"<<i.first<<" value:"<<i.second<<std::endl;
@@ -73,5 +74,6 @@ int httpRequest::parseRequest(std::string& request_string)
 //body
     _requestBody=request_string.substr(beforeCursor);
     std::cout<<"body"<<_requestBody<<std::endl;
+    */
     return 1;
 }

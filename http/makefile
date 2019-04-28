@@ -1,7 +1,7 @@
 ++ =g++
 arch =-m64
-object= httpserver.o run.o httpRequest.o
-header=httpserver.h httpRequest.h httpResponse.h httpHeader.h
+object= httpserver.o run.o httpRequest.o httpResponse.o
+header=httpserver.h httpRequest.h httpResponse.h httpHeader.h 
 libPath=
 lib=
 IncludePaht=
@@ -15,8 +15,16 @@ httpserver.o: httpserver.h httpserver.cpp
 	$(++) $(arch) -c httpserver.cpp  $(c++11) -pthread -fpermissive
 httpRequest.o: httpRequest.h httpRequest.cpp
 	$(++) $(arch) -c httpRequest.cpp  $(c++11) -pthread -fpermissive
+httpResponse.o: httpResponse.h httpResponse.cpp
+	$(++) $(arch) -c httpResponse.cpp  $(c++11) -pthread -fpermissive
+
 httpRequest.h:
+
 httpRequest.cpp:
+
+httpResponse.h:
+
+httpResponse.cpp:
 
 run.cpp: 
 httpserver.h:

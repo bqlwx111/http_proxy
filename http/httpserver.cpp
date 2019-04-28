@@ -5,11 +5,16 @@
 #include "parse.hxx"
 
 #include "httpRequest.h"
+#include "httpResponse.h"
+
+
 #include <iostream>
 #include <thread>
 #include <cstring>
 
 #include<unistd.h>
+
+#include <errno.h>
 
 
 httpServer::httpServer()
@@ -31,23 +36,45 @@ int httpServer::handleRequest(std::string request)
 typedef std::shared_ptr<httpRequest> Request;
 typedef std::shared_ptr<httpResponse> Response;
 
-httpServerReturnType httpServer::get(Request&)
+/*
+Cache-Control →private, max-age=0
+Content-Length →46225
+Content-Type →text/html; charset=utf-8
+Content-Encoding →gzip
+Vary →Accept-Encoding
+*/
+
+Response& httpServer::get(Request&)
+{
+    Response response (new httpResponse);
+    response->setStatusCode(200);
+    response->setVersion(HTTP1_0);
+
+    response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
+    response->addHttpHeader(std::string("Content-Type"),std::string("text/html; charset=utf-8"));
+    response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
+    response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
+
+    response->addHttpHeader(std::string("Content-Length"),std::string("500"));
+
+    //response->setResponse();
+
+    return response;
+}
+
+
+Response& httpServer::put(Request&)
 {
 
 }
-httpServerReturnType httpServer::put(Request&)
+Response& httpServer::head(Request&)
+{
+}
+Response& httpServer::post(Request&)
 {
 
 }
-httpServerReturnType httpServer::head(Request&)
-{
-
-}
-httpServerReturnType httpServer::post(Request&)
-{
-
-}
-httpServerReturnType httpServer::not_implemented(Request&)
+Response& httpServer::not_implemented(Request&)
 {
     
 }
@@ -134,20 +161,37 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     std::string request_string;
 
     char buf[32];
-    int counter=0;
-    while(recv(readableEvent.data.fd, buf,32, 0) > 0) 
-    {
-        //std::cout<<"bytenum:"<<n<<std::endl;
 
+    int n=0;
+    //int a;
+    while(true) //http client only send one message in each request
+    {
+        n=recv(readableEvent.data.fd, buf,32, 0);
+        if(n<=0)
+        {
+            //for http client only send one message each time ,we will handle EWOULDBLOCK AND EAGAIN  as break
+            if((errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN))//g++ provide thread security for errno
+                break;
+            else
+            {
+                std::cout<<"called"<<std::endl;
+                readableEvent.data.ptr=NULL;
+                epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,readableEvent.data.fd,&readableEvent);
+                close(readableEvent.data.fd);
+                break;
+            }
+        }
+
+        //std::cout<<"bytenum:"<<n<<std::endl;
         std::string temp;
-        temp.resize(32);
-        for(int i=0;i<32;i++)
+        temp.resize(n);
+        for(int i=0;i<n;i++)
         {
             temp[i]=buf[i];
             buf[i]=0;
-            counter++;
         }
         request_string+=temp;
+        //if(n<32)
         //std::cout<<buf<<std::endl;
         //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
@@ -156,12 +200,11 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     while((pos=request_string.find("\r\n"))!=request_string.npos)
     {
         request_string.replace(pos,2,"\n");
-        counter--;
     }
     
-    std::cout<<"counter::"<<counter<<std::endl;
-    std::cout<<"size::"<<request_string.size()<<std::endl;
-    std::cout<<"request:: \n"<<request_string<<std::endl;
+    //std::cout<<"counter::"<<counter<<std::endl;
+    //std::cout<<"size::"<<request_string.size()<<std::endl;
+    //std::cout<<"request:: \n"<<request_string<<std::endl;
     //std::cout<<"ReadSocket::event called : eventfd:"<< readableEvent.data.fd<<std::endl;
 
     //Request request(new httpRequest);

@@ -77,8 +77,8 @@ void httpServer::post(Request& request,Response& response)
     response->addHttpHeader(std::string("Content-Length"),std::string("500"));
 
     response->setResponse();
-    //std::cout<<"response.size()"<<response->getResponse().size()<<std::endl;
-    //response->showResponse();
+    std::cout<<"response.size()"<<response->getResponse().size()<<std::endl;
+    response->showResponse();
 
 }
 void httpServer::not_implemented(Request& request,Response& response)
@@ -275,7 +275,7 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
 
     if(request->getMethod()==POST)
     {
-        std::cout<<"post()"<<std::endl;
+        std::cout<<"post()";
         post(request,response);
     }
 
@@ -299,22 +299,22 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     std::string response_string=response->getResponse();
     
 
-    std::cout<<"called: "<<fdRequest->fd<<std::endl;
-    int size=response_string.size();
-    size=16;
-    std::cout<<"size:"<<size<<std::endl;    
+    std::cout<<"called: addr :"<<&fdRequest->fd<<std::endl;
+    long stringsize=response_string.size();
+    std::cout<<"called: addr :"<<&stringsize<<std::endl;
+    std::cout<<"size:"<<stringsize<<std::endl;    
     std::cout<<"called: "<<fdRequest->fd<<std::endl;
 
-    char* buf =new char [size];
+    char* buf =new char [stringsize];
     //std::shared_ptr<char> s_p(buf);
 
-    for(int i=0;i<size;i++)
+    for(int i=0;i<stringsize;i++)
         buf[i]=response_string[i];
     //std::cout<<buf<<std::endl;
     int n=0;
     while(true)
     {
-        n=send(fdRequest->fd,buf,size,0);
+        n=send(fdRequest->fd,buf,stringsize,0);
         std::cout<<"n: "<<n<<std::endl;
         if(n<=0)
         {

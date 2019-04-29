@@ -132,13 +132,13 @@ int httpResponse::setResponse()
 	}
 
 	_responseString+=temp;
-    _responseString+=" "+_status;
-    _responseString+=" "+_reasonPhrase+"\n";
+    _responseString+=" "+std::to_string(_status);
+    _responseString+=" "+_reasonPhrase+"\r\n";
 
     for(auto&i : _header_key_to_header_value)
-        _responseString+=i.first+": "+i.second+"\n";
+        _responseString+=i.first+": "+i.second+"\r\n";
 	
-    _responseString+="\n";
+    _responseString+="r\n";
 
     _responseString+=_responseBody;
 

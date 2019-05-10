@@ -6,6 +6,7 @@
 
 #include "httpRequest.h"
 #include "httpResponse.h"
+#include <mutex>
 
 
 #include <iostream>
@@ -15,7 +16,7 @@
 #include<unistd.h>
 
 #include <errno.h>
-
+std::mutex mut;
 
 struct fd_request
 {
@@ -24,12 +25,10 @@ struct fd_request
 
     fd_request()
     {
-        //std::cout<<"crustructor called"<<std::endl;
     }
     
     ~fd_request()
     {
-        //std::cout<<"destroy called"<<std::endl;
     }
 };
 
@@ -67,11 +66,8 @@ void httpServer::get(Request& request,Response& response)
     response->setVersion(HTTP1_0);
 
     response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
-    response->addHttpHeader(std::string("Content-Type"),std::string("text/html; charset=utf-8"));
     response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
     response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
-
-    response->addHttpHeader(std::string("Content-Length"),std::string("500"));
 
     response->setResponse();
 }
@@ -90,15 +86,10 @@ void httpServer::post(Request& request,Response& response)
     response->setVersion(HTTP1_0);
 
     response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
-    response->addHttpHeader(std::string("Content-Type"),std::string("text/html; charset=utf-8"));
     response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
     response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
 
-    response->addHttpHeader(std::string("Content-Length"),std::string("500"));
-
     response->setResponse();
-    //std::cout<<"response.size()"<<response->getResponse().size()<<std::endl;
-    //response->showResponse();
 
 }
 void httpServer::not_implemented(Request& request,Response& response)
@@ -111,7 +102,7 @@ int httpServer::initSocket()
     _sockfd=socket(AF_INET,SOCK_STREAM|SOCK_NONBLOCK,IPPROTO_TCP);
     if(_sockfd<0)
     {
-        std::cout<<"Failed to create socket"<<std::endl;
+        std::cout<<"104 :Failed to create socket"<<std::endl;
         return -1;
     }
 
@@ -124,7 +115,7 @@ int httpServer::initSocket()
 
     if(status!=0)  
     {
-        std::cout<<"Failed to bind socket to port: "<<_port<<std::endl;
+        std::cout<<"117: Failed to bind socket to port: "<<_port<<std::endl;
         return -1;
     }
 
@@ -132,10 +123,10 @@ int httpServer::initSocket()
 
     if(status)
     {
-        std::cout<<"Listen on port "<<_port<<" failed"<<std::endl;
+        std::cout<<"125: Listen on port "<<_port<<" failed"<<std::endl;
 		return -1;
     }
-    std::cout<<"httpserver listen on : "<<_ip<<" :: "<<_port<<" successful"<<std::endl;
+    std::cout<<"128: httpserver listen on : "<<_ip<<" :: "<<_port<<" successful"<<std::endl;
 
     _port_to_sockfd[_port]=_sockfd;
     _listen_fds.insert(_sockfd);
@@ -151,10 +142,10 @@ int httpServer::addsocket()
         e.data.ptr=new fd_request;
         fd_request* fdRequest=(fd_request*)e.data.ptr;
 
-        e.events=EPOLLIN|EPOLLOUT;
+        e.events=EPOLLIN|EPOLLOUT|EPOLLET;
         fdRequest->fd=_sockfd;
 
-        std::cout<<"addsocket() e.data.ptr"<<e.data.ptr<<std::endl;
+        std::cout<<"147 : addsocket()"<<std::endl;
         epoll_ctl(_epoll_fd,EPOLL_CTL_ADD,_sockfd, &e);
 
     }
@@ -169,23 +160,23 @@ int httpServer::ComingSocket(epoll_event& ComingEvent)
     fd_request* fdRequest=(fd_request*)ComingEvent.data.ptr;
 
     int sock_fd=accept4(fdRequest->fd,(sockaddr* )&clientAddr,&clilen,SOCK_NONBLOCK);
-
-    std::cout<<"ComingSocket::sock_fd :"<<sock_fd<<" epoll successful"<<std::endl;
+   
+    std::cout<<"163: ComingSocket::sock_fd :"<<sock_fd<<" epolled"<<" fdRequest->fd :"<<fdRequest->fd<<std::endl;
 
     epoll_event e;
 
-    e.events=EPOLLIN|EPOLLOUT|EPOLLHUP;
+    e.events=EPOLLIN|EPOLLHUP|EPOLLET;
 
     e.data.ptr=new fd_request;
     fdRequest=(fd_request*)e.data.ptr;
     fdRequest->fd=sock_fd;
 
-    std::cout<<"ComingSocket e.data.ptr:"<<e.data.ptr<<std::endl;
+
     epoll_ctl(_epoll_fd,EPOLL_CTL_ADD,sock_fd,&e);
 
-    e.events=EPOLLIN;
-    epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,sock_fd,&e);
-    //std::cout<<"add sock_fd:"<<sock_fd<<std::endl;
+    //e.events=EPOLLIN|EPOLLET;
+    //epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,sock_fd,&e);
+
 
     return 1;
 }
@@ -198,13 +189,13 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
 {
     fd_request* fdRequest=(fd_request*)readableEvent.data.ptr;
 
-    std::cout<<"ReadSocket() fd: "<<fdRequest->fd<<std::endl;
+    std::cout<<"191: ReadSocket fd: "<<fdRequest->fd<<std::endl;
     std::string request_string;
 
     char buf[32];
 
     int n=0;
-    //int a;
+
     while(true) //http client only send one message in each request
     {
         n=recv(fdRequest->fd, buf,32, 0);
@@ -215,9 +206,8 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
                 break;
             else
             {
-
                 epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&readableEvent);
-                std::cout<<"readableEvent.data.fd "<<fdRequest->fd<<std::endl;
+                std::cout<<"208 readableEvent.data.fd "<<fdRequest->fd<<std::endl;
                 delete (fd_request*)readableEvent.data.ptr;
                 readableEvent.data.ptr=NULL;
                 close(readableEvent.data.fd);
@@ -225,7 +215,6 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
             }
         }
 
-        //std::cout<<"bytenum:"<<n<<std::endl;
         std::string temp;
         temp.resize(n);
         for(int i=0;i<n;i++)
@@ -238,16 +227,12 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
 
     int pos=-1;
 
-    //std::cout<<request_string<<std::endl;
+
     while((pos=request_string.find("\r\n"))!=request_string.npos)
     {
         request_string.replace(pos,2,"\n");
     }
     
-    //std::cout<<"counter::"<<counter<<std::endl;
-    //std::cout<<"size::"<<request_string.size()<<std::endl;
-    //std::cout<<"request:: \n"<<request_string<<std::endl;
-    //std::cout<<"ReadSocket::event called : eventfd:"<< readableEvent.data.fd<<std::endl;
 
 
 
@@ -263,15 +248,14 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
 */
 
     
-    readableEvent.events=EPOLLOUT;
+    readableEvent.events=EPOLLOUT|EPOLLHUP|EPOLLET;
     fdRequest->request=new httpRequest;
     fdRequest->request->parseRequest(request_string);
 
 
-    std::cout<<"request:: addr "<<readableEvent.data.ptr<<std::endl;
 
     epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,fdRequest->fd,&readableEvent);
-    //std::cout<<"fdrequest.fd::"<<fdRequest.fd<<std::endl;
+;
 
     return 1;
 }
@@ -279,17 +263,14 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
 int httpServer::WriteSocket(epoll_event& writeableEvent)
 {
     //headerParse::FindField("abc");//todo
-    std::cout<<"request:: addr "<<writeableEvent.data.ptr<<std::endl;
     fd_request* fdRequest=(fd_request*)writeableEvent.data.ptr;
 
     Response response(new httpResponse);
 
-    std::cout<<"WriteSocket::event called : eventfd:"<<fdRequest->fd<<std::endl;
+    std::cout<<"269 WriteSocket::event called : eventfd:"<<fdRequest->fd<<std::endl;
     Request request (fdRequest->request);
+    std::cout<<"http request==nullptr ? "<<(fdRequest->request==nullptr)<<std::endl;
 
-    //request->showRequest();
-    //std::cout<<request->getMethod()<<std::endl;
-    //epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,readableEvent.data.fd,&e);
     
     if(request->getMethod()==GET)
     {
@@ -323,21 +304,25 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     
 
     long  stringsize;   
-    long size;
-    int  test;
 
     stringsize=response_string.size();
 
 
-    char* buf=new char [stringsize];
+    char buf[1024*1024];
+    if(stringsize>(1024*1024))
+        std::cout<<"314 detected large file more than 1024*1024 bytes "<<std::endl;
+
     for(int i=0;i<stringsize;i++)
         buf[i]=response_string[i];
-
+    
     int n=0;
+    int counter=0;
     while(true)
     {
         n=send(fdRequest->fd,buf,stringsize,0);
-        std::cout<<"n: "<<n<<std::endl;
+
+
+
         if(n<=0)
         {
             if(n==0)
@@ -356,17 +341,17 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
             std::cout<<"5"<<std::endl;   
             break;
         }
-        if(n==stringsize)
+        counter+=n;
+        if(counter==stringsize)
             break;
-        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    
-    writeableEvent.events=EPOLLHUP;
-    std::cout<<"fd addr :"<<&fdRequest->fd;
-    std::cout<<"fd :"<<fdRequest->fd;
+//==================================close connection 
+    std::cout<<"closeConnection()";
+    std::cout<< "fd: "<<fdRequest->fd<<std::endl;
+    epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+    close(fdRequest->fd);
+    delete fdRequest;
 
-    epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,fdRequest->fd,&writeableEvent);
-    
     // not modified the fd status 
     // core dumped here
     // shared_ptr cause
@@ -374,33 +359,36 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     return 1;
 }
 //========================================================
-int httpServer::CloseSokcet(epoll_event& closeAbleEvent)
+int httpServer::OnHup(epoll_event& closeAbleEvent)
 {
-    std::cout<<"closeSocket()";
+    std::cout<<"363: OnHup()";
     fd_request* fdRequest=(fd_request*)closeAbleEvent.data.ptr;
-    std::cout<< "fd: "<<fdRequest->fd<<std::endl;
+    std::cout<< "365 hup->fd: "<<fdRequest->fd<<std::endl;
     epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&closeAbleEvent);
     close(fdRequest->fd);
+    delete fdRequest->request;
+    delete fdRequest;
     return 1;
 }
 
 int httpServer::run()
 {
     char n;
-    while(std::cin>>n)
+    while(true)
     {
-        if(n=='q')
-        {
-            for(auto&i:_listen_fds)
-                close(i);
-            break;
-        }
         int events_num=epoll_wait(_epoll_fd,_MessageQueue,1024,-1);//
-        //std::cout<<"events_num:: "<<events_num<<std::endl;
+    
         for(int i=0;i<events_num;i++)
         {
             fd_request* fdRequest=(fd_request*)_MessageQueue[i].data.ptr;
-            //std::cout<<"run fdRequest::"<<fdRequest->fd<<std::endl;
+
+            if(_MessageQueue[i].events&EPOLLHUP)
+            {
+                std::thread t(&(httpServer::OnHup),this,std::ref(_MessageQueue[i]));
+                t.detach();
+                continue;
+            }
+
             if(_listen_fds.find(fdRequest->fd)!=_listen_fds.end())
             { 
                 std::thread t(&(httpServer::ComingSocket),this,std::ref(_MessageQueue[i]));
@@ -422,12 +410,6 @@ int httpServer::run()
                 continue;
             }
 
-            if(_MessageQueue[i].events&EPOLLHUP)
-            {
-                std::thread t(&(httpServer::CloseSokcet),this,std::ref(_MessageQueue[i]));
-                t.detach();
-                continue;
-            }
             
         }
 

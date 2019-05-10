@@ -49,7 +49,7 @@ typedef std::shared_ptr<httpResponse> Response;
         int ReadSocket(epoll_event &);
         int WriteSocket(epoll_event&);
         int ComingSocket(epoll_event& );
-        int CloseSokcet(epoll_event&);
+        int OnHup(epoll_event&);
 
         int handleRequest(std::string );
 

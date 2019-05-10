@@ -138,10 +138,11 @@ int httpResponse::setResponse()
     for(auto&i : _header_key_to_header_value)
         _responseString+=i.first+": "+i.second+"\r\n";
 	
-    _responseString+="r\n";
+    _responseString+="\r\n";
 
     _responseString+=_responseBody;
 
+    _responseString+="\r\n";
 	return 0;
  
 }

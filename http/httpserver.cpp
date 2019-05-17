@@ -64,12 +64,14 @@ void httpServer::get(Request& request,Response& response)
 {
     response->setStatusCode(200);
     response->setVersion(HTTP1_0);
+    response->setReasonPhrase();
 
     response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
     response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
     response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
 
     response->setResponse();
+    request->showRequest();
 }
 
 void httpServer::put(Request& request,Response& response)
@@ -84,13 +86,12 @@ void httpServer::post(Request& request,Response& response)
 {
     response->setStatusCode(200);
     response->setVersion(HTTP1_0);
+    response->setReasonPhrase();
 
     response->addHttpHeader(std::string("Cache-Control"),std::string("private, max-age=0"));
     response->addHttpHeader(std::string("Content-Encoding"),std::string("application/json"));
     response->setResponseBody(std::string("{ \"c++\": \"std11\"};"));
-
     response->setResponse();
-
 }
 void httpServer::not_implemented(Request& request,Response& response)
 {
@@ -158,11 +159,14 @@ int httpServer::ComingSocket(epoll_event& ComingEvent)
     struct sockaddr clientAddr;
     socklen_t clilen;
     fd_request* fdRequest=(fd_request*)ComingEvent.data.ptr;
-
-    int sock_fd=accept4(fdRequest->fd,(sockaddr* )&clientAddr,&clilen,SOCK_NONBLOCK);
-   
-    std::cout<<"163: ComingSocket::sock_fd :"<<sock_fd<<" epolled"<<" fdRequest->fd :"<<fdRequest->fd<<std::endl;
-
+    int sock_fd=-1;
+    while(sock_fd==-1)
+    {
+        sock_fd=accept4(fdRequest->fd,(sockaddr* )&clientAddr,&clilen,SOCK_NONBLOCK);
+        std::cout<<"163: ComingSocket::sock_fd :"<<sock_fd<<" epolled"<<" fdRequest->fd :"<<fdRequest->fd<<std::endl;
+        if(sock_fd==-1)
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
     epoll_event e;
 
     e.events=EPOLLIN|EPOLLHUP|EPOLLET;
@@ -187,6 +191,8 @@ typedef std::shared_ptr<httpResponse> Response;
 
 int httpServer::ReadSocket(epoll_event & readableEvent)
 {
+    try
+    {
     fd_request* fdRequest=(fd_request*)readableEvent.data.ptr;
 
     std::cout<<"191: ReadSocket fd: "<<fdRequest->fd<<std::endl;
@@ -202,15 +208,19 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
         if(n<=0)
         {
             //for http client only send one message each time ,we will handle EWOULDBLOCK AND EAGAIN  as break
-            if((errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN))//g++ provide thread security for errno
+            if((errno == EINTR || errno == EWOULDBLOCK))//g++ provide thread security for errno
                 break;
+            if(errno == EAGAIN)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                    continue;
+                }
             else
             {
                 epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&readableEvent);
                 std::cout<<"208 readableEvent.data.fd "<<fdRequest->fd<<std::endl;
+                close(fdRequest->fd);
                 delete (fd_request*)readableEvent.data.ptr;
-                readableEvent.data.ptr=NULL;
-                close(readableEvent.data.fd);
                 break;
             }
         }
@@ -250,107 +260,110 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     
     readableEvent.events=EPOLLOUT|EPOLLHUP|EPOLLET;
     fdRequest->request=new httpRequest;
-    fdRequest->request->parseRequest(request_string);
-
-
-
+    fdRequest->request->parseRequest(request_string);   
+    std::cout<<"257 fdRequest->fd"<<fdRequest->fd<<std::endl;
     epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,fdRequest->fd,&readableEvent);
-;
-
     return 1;
+    }
+    catch(const std::exception& e)
+    {
+        std::cout << e.what() << '\n';
+    }
 }
 
 int httpServer::WriteSocket(epoll_event& writeableEvent)
 {
-    //headerParse::FindField("abc");//todo
-    fd_request* fdRequest=(fd_request*)writeableEvent.data.ptr;
-
-    Response response(new httpResponse);
-
-    std::cout<<"269 WriteSocket::event called : eventfd:"<<fdRequest->fd<<std::endl;
-    Request request (fdRequest->request);
-    std::cout<<"http request==nullptr ? "<<(fdRequest->request==nullptr)<<std::endl;
-
-    
-    if(request->getMethod()==GET)
+    try
     {
-        std::cout<<"get()"<<std::endl;
-        get(request,response);
-    }
+        //headerParse::FindField("abc");//todo
+        fd_request* fdRequest=(fd_request*)writeableEvent.data.ptr;
 
-    if(request->getMethod()==POST)
-    {
-        std::cout<<"post()\n";
-        post(request,response);
-    }
+        Response response(new httpResponse);
 
-    if(request->getMethod()==HEAD)
-    {
-        head(request,response);
-    }
+        std::cout<<"269 WriteSocket::event called : eventfd:"<<fdRequest->fd<<std::endl;
+        Request request (fdRequest->request);
+        //std::cout<<"http request==nullptr ? "<<(fdRequest->request==nullptr)<<std::endl;
 
-    if(request->getMethod()==PUT)
-    {
-        put(request,response);
-    }
-
-    if(request->getMethod()==NOT_IMPLEMENTED)
-    {
-        not_implemented(request,response);
-    }
-
-    response->showResponse();
-    std::string response_string=response->getResponse();
-    
-
-    long  stringsize;   
-
-    stringsize=response_string.size();
-
-
-    char buf[1024*1024];
-    if(stringsize>(1024*1024))
-        std::cout<<"314 detected large file more than 1024*1024 bytes "<<std::endl;
-
-    for(int i=0;i<stringsize;i++)
-        buf[i]=response_string[i];
-    
-    int n=0;
-    int counter=0;
-    while(true)
-    {
-        n=send(fdRequest->fd,buf,stringsize,0);
-
-
-
-        if(n<=0)
+        
+        if(request->getMethod()==GET)
         {
-            if(n==0)
-            {   
-                std::cout<<"3"<<std::endl;
-                epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
-                close(fdRequest->fd);
+            std::cout<<"get()"<<std::endl;
+            get(request,response);
+        }
+
+        if(request->getMethod()==POST)
+        {
+            std::cout<<"post()\n";
+            post(request,response);
+        }
+
+        if(request->getMethod()==HEAD)
+        {
+            head(request,response);
+        }
+
+        if(request->getMethod()==PUT)
+        {
+            put(request,response);
+        }
+
+        if(request->getMethod()==NOT_IMPLEMENTED)
+        {
+            not_implemented(request,response);
+        }
+
+        //response->showResponse();
+        std::string response_string=response->getResponse();
+
+        long  stringsize;   
+
+        stringsize=response_string.size();
+
+
+        char buf[1024*1024];
+        if(stringsize>(1024*1024))
+            std::cout<<"314 detected large file more than 1024*1024 bytes "<<std::endl;
+
+        for(int i=0;i<stringsize;i++)
+            buf[i]=response_string[i];
+        
+        int n=0;
+        int counter=0;
+        while(true)
+        {
+            n=send(fdRequest->fd,buf,stringsize,0);
+            if(n<=0)
+            {
+                if(n==0)
+                {   
+                    std::cout<<"3"<<std::endl;
+                    epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+                    close(fdRequest->fd);
+                    break;
+                }
+                if(errno==EAGAIN)
+                {
+                    std::cout<<"4"<<std::endl;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    continue;
+                }
+                std::cout<<"5"<<std::endl;   
                 break;
             }
-            if(errno==EAGAIN)
-            {
-                std::cout<<"4"<<std::endl;
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                continue;
-            }
-            std::cout<<"5"<<std::endl;   
-            break;
+            counter+=n;
+            if(counter==stringsize)
+                break;
         }
-        counter+=n;
-        if(counter==stringsize)
-            break;
+    //==================================close connection 
+        std::cout<<"closeConnection()";
+        std::cout<< "fd: "<<fdRequest->fd<<std::endl;
+        epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+        close(fdRequest->fd);
     }
-//==================================close connection 
-    std::cout<<"closeConnection()";
-    std::cout<< "fd: "<<fdRequest->fd<<std::endl;
-    epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
-    close(fdRequest->fd);
-    delete fdRequest;
+    catch(const std::exception& e)
+    {
+        std::cout << e.what() << '\n';
+    }
 
     // not modified the fd status 
     // core dumped here
@@ -361,14 +374,24 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
 //========================================================
 int httpServer::OnHup(epoll_event& closeAbleEvent)
 {
-    std::cout<<"363: OnHup()";
-    fd_request* fdRequest=(fd_request*)closeAbleEvent.data.ptr;
-    std::cout<< "365 hup->fd: "<<fdRequest->fd<<std::endl;
-    epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&closeAbleEvent);
-    close(fdRequest->fd);
-    delete fdRequest->request;
-    delete fdRequest;
-    return 1;
+    /*
+    try
+    {
+        std::cout<<"363: OnHup()\n";
+        fd_request* fdRequest=(fd_request*)closeAbleEvent.data.ptr;
+        std::cout<< "365 hup->fd: "<<fdRequest->fd<<std::endl;
+        epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&closeAbleEvent);
+        close(fdRequest->fd);
+        delete fdRequest->request;
+        delete fdRequest;
+        return 1;
+    }
+    catch(const std::exception& e)
+    {
+        std::cout<<"called"<<std::endl;
+        std::cerr << e.what() << '\n';
+    }
+    */
 }
 
 int httpServer::run()
@@ -381,7 +404,6 @@ int httpServer::run()
         for(int i=0;i<events_num;i++)
         {
             fd_request* fdRequest=(fd_request*)_MessageQueue[i].data.ptr;
-
             if(_MessageQueue[i].events&EPOLLHUP)
             {
                 std::thread t(&(httpServer::OnHup),this,std::ref(_MessageQueue[i]));
@@ -408,9 +430,7 @@ int httpServer::run()
                 std::thread t(&(httpServer::WriteSocket),this,std::ref(_MessageQueue[i]));
                 t.detach();
                 continue;
-            }
-
-            
+            }       
         }
 
     }

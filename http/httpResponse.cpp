@@ -115,10 +115,9 @@ std::string& httpResponse::getResponseBody()
 
 int httpResponse::setResponse()
 {
-    Version version;
     std::string temp;
-
-	switch(version)
+    _responseString="";
+	switch(_Version)
     {
 		case HTTP1_0:
 			temp= "HTTP/1.0";

@@ -2,7 +2,7 @@
 #include "httpHeader.h"
 #include <unordered_map>
 #include <iostream>
-
+#include <thread>
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
@@ -14,13 +14,11 @@ class httpRequest
         httpRequest(){}
         ~httpRequest(){}
 
-        httpRequest(const httpRequest&& request){}
+        //httpRequest(const httpRequest&& request){}
 
         void showRequest()
         {
-            std::cout<<"--request--::\n";
-            for(auto& i: _header_key_to_header_value)
-                std::cout<<"key:"<<i.first<<" "<<"value"<<i.second;
+            //std::cout<<"--request--::\n "<<std::this_thread::get_id()<<std::endl;
         }
 
         Method getMethod(){return _Method;}

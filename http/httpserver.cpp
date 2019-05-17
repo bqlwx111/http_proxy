@@ -147,7 +147,9 @@ int httpServer::addsocket()
         fdRequest->fd=_sockfd;
 
         std::cout<<"147 : addsocket()"<<std::endl;
-        epoll_ctl(_epoll_fd,EPOLL_CTL_ADD,_sockfd, &e);
+        auto i=epoll_ctl(_epoll_fd,EPOLL_CTL_ADD,_sockfd, &e);
+        std::cout <<"151: epoll result "<<i; 
+        if(i==-1) std::cout<<" errno "<<errno;std::cout<<std::endl;
 
     }
     else return -1;
@@ -160,12 +162,17 @@ int httpServer::ComingSocket(epoll_event& ComingEvent)
     socklen_t clilen;
     fd_request* fdRequest=(fd_request*)ComingEvent.data.ptr;
     int sock_fd=-1;
+    int counter=0;
     while(sock_fd==-1)
     {
+        if(counter==3) return;
         sock_fd=accept4(fdRequest->fd,(sockaddr* )&clientAddr,&clilen,SOCK_NONBLOCK);
         std::cout<<"163: ComingSocket::sock_fd :"<<sock_fd<<" epolled"<<" fdRequest->fd :"<<fdRequest->fd<<std::endl;
         if(sock_fd==-1)
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+        {
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+                counter++;
+        }
     }
     epoll_event e;
 
@@ -176,8 +183,9 @@ int httpServer::ComingSocket(epoll_event& ComingEvent)
     fdRequest->fd=sock_fd;
 
 
-    epoll_ctl(_epoll_fd,EPOLL_CTL_ADD,sock_fd,&e);
-
+    auto i=epoll_ctl(_epoll_fd,EPOLL_CTL_ADD,sock_fd,&e);
+    std::cout <<"181 epoll result "<<i<<std::endl; 
+    if(i==-1) std::cout<<" errno "<<errno;std::cout<<std::endl;
     //e.events=EPOLLIN|EPOLLET;
     //epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,sock_fd,&e);
 
@@ -217,7 +225,9 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
                 }
             else
             {
-                epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&readableEvent);
+                auto i=epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&readableEvent);
+                if(i==-1) std::cout<<" errno "<<errno;std::cout<<std::endl;
+                std::cout <<"222 epoll result "<<i<<std::endl; 
                 std::cout<<"208 readableEvent.data.fd "<<fdRequest->fd<<std::endl;
                 close(fdRequest->fd);
                 delete (fd_request*)readableEvent.data.ptr;
@@ -262,12 +272,14 @@ int httpServer::ReadSocket(epoll_event & readableEvent)
     fdRequest->request=new httpRequest;
     fdRequest->request->parseRequest(request_string);   
     std::cout<<"257 fdRequest->fd"<<fdRequest->fd<<std::endl;
-    epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,fdRequest->fd,&readableEvent);
+    auto i=epoll_ctl(_epoll_fd,EPOLL_CTL_MOD,fdRequest->fd,&readableEvent);
+    std::cout <<"268 epoll result "<<i<<std::endl; 
+    //if(i==-1) std::cout<<" errno "<<errno;std::cout<<std::endl;
     return 1;
     }
     catch(const std::exception& e)
     {
-        std::cout << e.what() << '\n';
+        std::cout<<" 273 "<< e.what() << '\n';
     }
 }
 
@@ -277,7 +289,9 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     {
         //headerParse::FindField("abc");//todo
         fd_request* fdRequest=(fd_request*)writeableEvent.data.ptr;
+        if(fdRequest->request==nullptr) return;
 
+        fdRequest->request->showRequest();
         Response response(new httpResponse);
 
         std::cout<<"269 WriteSocket::event called : eventfd:"<<fdRequest->fd<<std::endl;
@@ -337,7 +351,9 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
                 if(n==0)
                 {   
                     std::cout<<"3"<<std::endl;
-                    epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+                    auto i =epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+                    std::cout <<"344 epoll result "<<i<<std::endl; 
+                    if(i==-1) std::cout<<" errno "<<errno;std::cout<<std::endl;
                     close(fdRequest->fd);
                     break;
                 }
@@ -357,12 +373,19 @@ int httpServer::WriteSocket(epoll_event& writeableEvent)
     //==================================close connection 
         std::cout<<"closeConnection()";
         std::cout<< "fd: "<<fdRequest->fd<<std::endl;
-        epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+        auto i=epoll_ctl(_epoll_fd,EPOLL_CTL_DEL,fdRequest->fd,&writeableEvent);
+        std::cout <<"377 epoll result "<<i<<std::endl; 
+        if(i==-1) 
+        {
+            std::cout<<" errno "<<errno;
+            return ;
+        }
+        std::cout<<std::endl;
         close(fdRequest->fd);
     }
     catch(const std::exception& e)
     {
-        std::cout << e.what() << '\n';
+        std::cout <<" 370 "<< e.what() << '\n';
     }
 
     // not modified the fd status 
@@ -390,8 +413,7 @@ int httpServer::OnHup(epoll_event& closeAbleEvent)
     {
         std::cout<<"called"<<std::endl;
         std::cerr << e.what() << '\n';
-    }
-    */
+    }*/
 }
 
 int httpServer::run()

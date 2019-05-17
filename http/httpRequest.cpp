@@ -5,6 +5,7 @@
 int httpRequest::parseRequest(std::string& request_string)
 {
     //std::cout<<"--request: --\n"<<request_string<<std::endl;
+    _request_string=request_string;
     int beforeCursor=0;
     int afterCursor=0;
 

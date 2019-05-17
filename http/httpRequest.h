@@ -12,12 +12,13 @@ class httpRequest
 {
     public:
         httpRequest(){}
-        ~httpRequest(){}
+        ~httpRequest(){_header_key_to_header_value.clear();}
 
         //httpRequest(const httpRequest&& request){}
 
         void showRequest()
         {
+            std::cout<<"--request: --\n"<<_request_string<<std::endl;
             //std::cout<<"--request--::\n "<<std::this_thread::get_id()<<std::endl;
         }
 
@@ -46,6 +47,7 @@ class httpRequest
         std::string _hostName;
         std::unordered_map<std::string,std::string> _header_key_to_header_value;
         std::string _requestBody;
+        std::string _request_string;
         std::string _data;
 };
 
